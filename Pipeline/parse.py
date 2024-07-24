@@ -22,7 +22,7 @@ def parse_args():
     parser.add_argument("--kg", type = str, default = 'TF-IDF')
 
     parser.add_argument("--n_data", type = int, default = 10)
-    parser.add_argument("--port", type = int, default = 5000)
+    parser.add_argument("--port", type = int, default = 6000)
 
     
     return parser.parse_args()

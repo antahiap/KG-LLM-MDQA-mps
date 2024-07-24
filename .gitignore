@@ -183,3 +183,9 @@ volumes/*/data/
 Data-Collect/*/*.json 
 DPR/train_data/*/*.json
 DPR/QA-data/*/*.json
+
+*/result/*
+*/dataset/*
+*/model/*
+*/Context/*
+T5/*.json

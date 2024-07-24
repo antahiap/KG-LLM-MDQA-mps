@@ -2,6 +2,17 @@ from tqdm import tqdm
 import torch
 import numpy as np
 
+def set_device():
+
+    # Check and set the device
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():  # Apple Silicon MPS support
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    return device         
+
 
 def train(epoch, tokenizer, model, loader, optimizer):
 
@@ -11,15 +22,16 @@ def train(epoch, tokenizer, model, loader, optimizer):
 
     model.train()
     losses = []
+    device = set_device()
     for _, data in enumerate(tqdm(loader, desc = f"Epoch {epoch}"), 0):
-        y = data["target_ids"].cuda()
+        y = data["target_ids"].to(device)
         # .to(device, dtype=torch.long)
         y_ids = y[:, :-1].contiguous()
         lm_labels = y[:, 1:].clone().detach()
         lm_labels[y[:, 1:] == tokenizer.pad_token_id] = -100
-        ids = data["source_ids"].cuda()
+        ids = data["source_ids"].to(device)
         # .to(device, dtype=torch.long)
-        mask = data["source_mask"].cuda()
+        mask = data["source_mask"].to(device)
         # .to(device, dtype=torch.long)
 
         outputs = model(
@@ -50,14 +62,15 @@ def eval(tokenizer, model, loader):
     predictions = []
     actuals = []
     questions = []
+    device = set_device()
 
     with torch.no_grad():
         for _, data in enumerate(tqdm(loader, desc = f"Eval"), 0):
-            y = data['target_ids'].cuda()
+            y = data['target_ids'].to(device)
             # .to(device, dtype = torch.long)
-            ids = data['source_ids'].cuda()
+            ids = data['source_ids'].to(device)
             # .to(device, dtype = torch.long)
-            mask = data['source_mask'].cuda()
+            mask = data['source_mask'].to(device)
             # .to(device, dtype = torch.long)
 
             generated_ids = model.module.generate(

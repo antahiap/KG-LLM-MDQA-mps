@@ -19,7 +19,7 @@ def parse_args():
 
     
     #training setting
-    parser.add_argument("--num_workers", type=int, default=64)
+    parser.add_argument("--num_workers", type=int, default=12)
     parser.add_argument("--train_bsz", type=int, default=4)
     parser.add_argument("--eval_bsz", type=int, default=4)
     parser.add_argument("--train_epochs", type=float, default=3)

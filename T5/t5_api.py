@@ -6,9 +6,18 @@ from utils import inf_encode
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+def set_device():
 
+    # Check and set the device
+    if torch.cuda.is_available():
+        device = torch.device("cuda:0")
+    # elif torch.backends.mps.is_available():  # Apple Silicon MPS support
+    #     device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    return device
 
-device = 'cuda:0'
+device = set_device()
 dataset = 'reason_t5-large'
 model =  T5ForConditionalGeneration.from_pretrained("./model/{}".format(dataset)).to(device)
 tokenizer = T5Tokenizer.from_pretrained("./model/{}".format(dataset))

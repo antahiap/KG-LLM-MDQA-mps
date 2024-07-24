@@ -8,6 +8,16 @@ from tqdm import tqdm
 from functools import partial
 import multiprocessing as mp
 
+def set_device(gpu_idx):
+
+    # Check and set the device
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{gpu_idx}")
+    elif torch.backends.mps.is_available():  # Apple Silicon MPS support
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    return device  
 
 def get_chunk_embs(i_d, stripping, encoder):
     _, data, gpu_idx = i_d
@@ -25,7 +35,8 @@ def get_chunk_embs(i_d, stripping, encoder):
         chunks.extend(window_encodings(chunk, window_size = 4, overlap = 2))
         group_idx.append(len(chunks))
     
-    chunk_embeds = encoder.encode(chunks, device = 'cuda:{}'.format(gpu_idx))
+    # chunk_embeds = encoder.encode(chunks, device = 'cuda:{}'.format(gpu_idx))
+    chunk_embeds = encoder.encode(chunks, device = set_device(gpu_idx))
     data['chunk_embeds'] = chunk_embeds
     data['group_idx'] = group_idx
     data['strip_chunks'] = strip_chunks
@@ -44,7 +55,7 @@ def load_data(dataset, stripping, encoder):
         data = json.load(open('./dataset/{}/test_docs.json'.format(dataset), 'rb'))
 
         encoder = get_encoder(encoder)
-        num_gpus = torch.cuda.device_count()  # Number of available GPUs
+        # num_gpus = torch.cuda.device_count()  # Number of available GPUs
 
         func = partial(get_chunk_embs, stripping = stripping, encoder = encoder)
 

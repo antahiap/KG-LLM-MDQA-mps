@@ -4,10 +4,23 @@ This repository includes the code and demo of [Knowledge Graph Prompting for Mul
 ## Dependencies
 
 ### Python for development
+Install the dependencies via pip or conda,
 ```
 conda create --prefix ./env-MDQA python=3.10 -y
 conda activate ./env-MDQA
 pip install -r requirements.txt
+```
+
+
+### OpenAI API
+Get your OPENAI_API_KEY and store it in var for linux as follow, other setup
+echo "export OPENAI_API_KEY='yourkey'" >> ~/.zshrc
+source ~/.zshrc
+
+Put your api key in .env file, exemple of .env file:
+OPENAI_API_KEY="you-key"
+
+
 
 # Folder Architecture
 * **Data-Collect**: Codes for querying/collecting Documents based on QA datasets from existing literature. In addition, if you want to get access to the internally collected real-world document question-answering dataset, please refer paper [PDFTriage: Question Answering over Long, Structured Documents

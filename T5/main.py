@@ -34,16 +34,18 @@ def run(train_data, val_data, model, tokenizer, args):
         "batch_size": args.train_bsz,
         "shuffle": False,
         "num_workers": args.num_workers,
+        "sampler": DistributedSampler(train_set)
     }
 
     val_params = {
         "batch_size": args.eval_bsz,
         "shuffle": False,
         "num_workers": args.num_workers,
+        "sampler": DistributedSampler(val_set)
     }
 
-    train_loader = DataLoader(train_set, **train_params, sampler = DistributedSampler(train_set))
-    val_loader = DataLoader(val_set, **val_params, sampler = DistributedSampler(val_set))
+    train_loader = DataLoader(train_set, **train_params)
+    val_loader = DataLoader(val_set, **val_params)
 
     optimizer = torch.optim.Adam(params=model.parameters(), lr=args.lr)
 
@@ -68,18 +70,40 @@ def run(train_data, val_data, model, tokenizer, args):
     final_df.to_csv("./res/{}_{}/predictions.csv".format(args.dataset, args.model))
 
 
+def initialize_distributed(args):
+    # Set the environment variable to use CPU fallback for unsupported MPS ops
+    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+    # Initialize the distributed process group
+    torch.distributed.init_process_group(backend='gloo')
+    
+    # Determine the local rank
+    local_rank = int(os.getenv('LOCAL_RANK', '0'))
+
+    # Set the appropriate device based on availability
+    if torch.cuda.is_available():
+        device = torch.device(f'cuda:{local_rank}')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
+
+    return device, local_rank
 
 if __name__ == "__main__":
     args = parse_args()
     args.path = os.getcwd()
 
-    torch.cuda.set_device(args.local_rank)
-    device = torch.device("cuda", args.local_rank)
-    torch.distributed.init_process_group(backend='nccl')
+    # torch.cuda.set_device(args.local_rank)
+    # device = torch.device("cuda", args.local_rank)
+    # device = set_device() 
+    # torch.distributed.init_process_group(backend='nccl')
+    
+    # args.device = set_device(args)  #torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    n_gpu = torch.cuda.device_count()
+    # Initialize distributed training and set device
+    args.device, args.local_rank = initialize_distributed(args)
+    # n_gpu = torch.cuda.device_count()
 
     seed_everything(args.seed)
     train_data, val_data = load_dataset(args) 
@@ -90,7 +114,9 @@ if __name__ == "__main__":
     
     # for training
     tokenizer = T5Tokenizer.from_pretrained(args.model)
-    model = T5ForConditionalGeneration.from_pretrained(args.model).cuda()
-    model = DistributedDataParallel(model)
+    model = T5ForConditionalGeneration.from_pretrained(args.model).to(args.device)
+    if torch.cuda.is_available():
+        model = DistributedDataParallel(model, device_ids=[args.local_rank])
+    # model = DistributedDataParallel(model)
 
     run(train_data, val_data, model, tokenizer, args)
